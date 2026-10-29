@@ -1,36 +1,53 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bijles Wiskunde – website
 
-## Getting Started
+Website voor een bijlesdocent wiskunde (A, B, C en D, van brugklas tot hbo). Gemaakt met Next.js 16 (App Router), React 19 en Tailwind CSS 4.
 
-First, run the development server:
+## Installeren en starten
+
+Vereist: Node.js 20.9 of nieuwer.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # ontwikkelserver op http://localhost:3000
+npm run build    # productie-build
+npm start        # productie-build draaien
+npm run lint     # code controleren
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Content aanpassen
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Alle teksten staan in **`content/site.ts`**: naam van de site, contactgegevens, niveaus, vakken, over mij, stappen en veelgestelde vragen.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Tekst tussen **[vierkante haken]** is voorbeeldtekst. Op de site zie je die geel gemarkeerd. Zoek in het bestand op `[` om alles te vinden wat nog open staat.
+- Vul `location` in (bijv. `"Utrecht"`). De plaats komt dan in titels en koppen, wat helpt bij lokale vindbaarheid.
+- Laat `phone` leeg (`""`) als je geen telefoonnummer wilt tonen.
+- Een foto op de pagina *Over mij*: zet het bestand in `public/` en vervang het gemarkeerde vlak in `app/over-mij/page.tsx` door `next/image`.
 
-## Learn More
+Stel bij livegang het echte domein in met de omgevingsvariabele `NEXT_PUBLIC_SITE_URL` (bijv. `https://www.jouwdomein.nl`). Die wordt gebruikt voor de sitemap, robots.txt en canonieke links.
 
-To learn more about Next.js, take a look at the following resources:
+## Formulier aansluiten
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Het aanvraagformulier (`/aanvragen`) valideert in de browser en opnieuw op de server (`lib/lesson-request.ts`). Verzenden gebeurt op één plek: **`lib/submit-request.ts`**.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> **Let op:** zonder instelling komt een aanvraag alleen in de serverlog terecht en ontvang je hem dus niet. Sluit het formulier aan vóór je de site live zet.
 
-## Deploy on Vercel
+**Optie 1 – webhook (geen code nodig).** Zet `CONTACT_WEBHOOK_URL` op een URL die JSON via POST accepteert. De aanvraag wordt daarheen gestuurd als JSON met de velden `name`, `role`, `email`, `phone`, `level`, `subject`, `message` en `receivedAt`. Geschikte diensten zijn bijvoorbeeld Formspree, Make, Zapier of n8n. Bij die diensten heb je een account nodig en sommige zijn betaald boven een gratis limiet.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+# .env.local (niet in git)
+CONTACT_WEBHOOK_URL=https://formspree.io/f/jouw-id
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Optie 2 – eigen code.** Vervang de inhoud van `submitRequest()` door bijvoorbeeld een e-maildienst (Resend, Postmark, SMTP via nodemailer) of opslag in een database. Geef `{ ok: true }` terug als het lukt en `{ ok: false }` als het mislukt. De bezoeker ziet dan een foutmelding met je e-mailadres.
+
+Het formulier heeft een eenvoudige spamval (een verborgen veld). Krijg je toch veel spam, voeg dan bijvoorbeeld Cloudflare Turnstile toe.
+
+## Structuur
+
+```
+app/                  pagina's (App Router), sitemap.ts, robots.ts, icon.svg
+  aanvragen/actions.ts  server action van het formulier
+components/           herbruikbare onderdelen (header, footer, CTA, FAQ, formulier, ...)
+content/site.ts       alle teksten en gegevens
+lib/                  validatie, verzending, SEO-hulpjes
+```
